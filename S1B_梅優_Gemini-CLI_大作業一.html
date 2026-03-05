@@ -1,0 +1,1490 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>線上測驗系統（分科進度·無圖片版）</title>
+    <style>
+        :root {
+            --bg: #f8f9fa;
+            --fg: #212529;
+            --card: #ffffff;
+            --border: #dee2e6;
+            --accent: #407bff;
+            --correct: #28a745;
+            --wrong: #dc3545;
+            --muted: #6c757d;
+            --progress: #e9ecef;
+            --shadow: rgba(0,0,0,0.1);
+            --timer-normal: #407bff;
+            --timer-warning: #ffc107;
+            --timer-danger: #dc3545;
+        }
+
+        [data-theme="dark"] {
+            --bg: #121212;
+            --fg: #e9ecef;
+            --card: #1e1e1e;
+            --border: #343a40;
+            --accent: #74a3ff;
+            --correct: #38b000;
+            --wrong: #ff4d6d;
+            --muted: #adb5bd;
+            --progress: #2d3436;
+            --shadow: rgba(0,0,0,0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            transition: all 0.2s ease;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--fg);
+            font-family: 'Microsoft JhengHei', 'Arial', sans-serif;
+            line-height: 1.6;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        /* 主題切換按鈕 */
+        .theme-switch {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: var(--card);
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 999;
+            box-shadow: 0 2px 8px var(--shadow);
+        }
+
+        .theme-icon {
+            font-size: 20px;
+        }
+
+        /* 首頁樣式 */
+        .home {
+            margin-top: 40px;
+            text-align: center;
+        }
+
+        .home-header {
+            margin-bottom: 40px;
+            padding: 20px;
+            background: var(--card);
+            border-radius: 16px;
+            box-shadow: 0 4px 12px var(--shadow);
+        }
+
+        .home-title {
+            font-size: 28px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .title-icon {
+            font-size: 32px;
+        }
+
+        .home-subtitle {
+            color: var(--muted);
+            font-size: 16px;
+        }
+
+        /* 學習統計面板 */
+        .stats-panel {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 40px;
+            box-shadow: 0 4px 12px var(--shadow);
+        }
+
+        .stats-title {
+            font-size: 20px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* 分科統計 */
+        .subject-stats-title {
+            font-size: 18px;
+            margin-bottom: 15px;
+            text-align: left;
+            color: var(--fg);
+        }
+
+        .subject-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .subject-stat-card {
+            background: var(--bg);
+            border-radius: 12px;
+            padding: 20px;
+            border-left: 4px solid var(--accent);
+        }
+
+        .subject-stat-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .subject-stat-details {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .subject-stat-detail {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .subject-stat-desc {
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        /* 學科卡片 */
+        .subject-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .subject-card {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 30px 20px;
+            border: 1px solid var(--border);
+            box-shadow: 0 4px 12px var(--shadow);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .subject-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background: var(--accent);
+        }
+
+        .subject-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px var(--shadow);
+        }
+
+        .subject-icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+            color: var(--accent);
+        }
+
+        .subject-name {
+            font-size: 20px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .subject-desc {
+            color: var(--muted);
+            font-size: 14px;
+        }
+
+        /* 測驗頁面 */
+        .quiz {
+            display: none;
+            margin-top: 30px;
+        }
+
+        .quiz-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            background: var(--card);
+            padding: 15px 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px var(--shadow);
+        }
+
+        .back-btn {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 8px 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .back-btn:hover {
+            background: var(--progress);
+        }
+
+        .quiz-title {
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        /* 計時器 */
+        .timer-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .timer-label {
+            font-size: 14px;
+            color: var(--muted);
+        }
+
+        .timer {
+            font-size: 18px;
+            font-weight: bold;
+            padding: 5px 10px;
+            border-radius: 6px;
+            background: var(--bg);
+            border: 1px solid var(--border);
+        }
+
+        .timer-normal {
+            color: var(--timer-normal);
+        }
+
+        .timer-warning {
+            color: var(--timer-warning);
+        }
+
+        .timer-danger {
+            color: var(--timer-danger);
+            animation: pulse 1s infinite alternate;
+        }
+
+        @keyframes pulse {
+            from { opacity: 1; }
+            to { opacity: 0.7; }
+        }
+
+        /* 進度條 */
+        .quiz-progress {
+            margin-bottom: 25px;
+        }
+
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: var(--muted);
+        }
+
+        .progress-bar {
+            height: 10px;
+            background: var(--progress);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--accent);
+            border-radius: 5px;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        /* 題目區域 - 移除圖片後調整 */
+        .question-card {
+            background: var(--card);
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 12px var(--shadow);
+        }
+
+        .question-content {
+            width: 100%;
+        }
+
+        .question-number {
+            font-size: 14px;
+            color: var(--muted);
+            margin-bottom: 5px;
+        }
+
+        .question-text {
+            font-size: 18px;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        /* 選項區域 */
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+
+        .option {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 15px 20px;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .option:hover {
+            border-color: var(--accent);
+            background: color-mix(in srgb, var(--accent) 5%, transparent);
+        }
+
+        .option.selected {
+            border-color: var(--accent);
+            background: color-mix(in srgb, var(--accent) 10%, transparent);
+            font-weight: bold;
+        }
+
+        .option.correct {
+            border-color: var(--correct);
+            background: color-mix(in srgb, var(--correct) 10%, transparent);
+        }
+
+        .option.incorrect {
+            border-color: var(--wrong);
+            background: color-mix(in srgb, var(--wrong) 10%, transparent);
+        }
+
+        .option-icon {
+            font-size: 18px;
+            opacity: 0;
+        }
+
+        .option.selected .option-icon,
+        .option.correct .option-icon,
+        .option.incorrect .option-icon {
+            opacity: 1;
+        }
+
+        /* 回饋訊息 */
+        .feedback {
+            text-align: center;
+            font-size: 16px;
+            font-weight: bold;
+            min-height: 24px;
+            margin-bottom: 20px;
+        }
+
+        .feedback-correct {
+            color: var(--correct);
+        }
+
+        .feedback-wrong {
+            color: var(--wrong);
+        }
+
+        /* 導航按鈕 */
+        .quiz-nav {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+        }
+
+        .nav-btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .nav-btn-secondary {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--fg);
+        }
+
+        .nav-btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+
+        .nav-btn:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+
+        /* 結果頁面 */
+        .result {
+            display: none;
+            text-align: center;
+            margin-top: 50px;
+            background: var(--card);
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 4px 12px var(--shadow);
+        }
+
+        .result-icon {
+            font-size: 64px;
+            margin-bottom: 20px;
+            color: var(--accent);
+        }
+
+        .result-title {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .result-score {
+            font-size: 24px;
+            margin-bottom: 30px;
+            color: var(--accent);
+            font-weight: bold;
+        }
+
+        .result-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .result-stat {
+            background: var(--bg);
+            border-radius: 10px;
+            padding: 15px;
+        }
+
+        .result-stat-label {
+            font-size: 14px;
+            color: var(--muted);
+        }
+
+        .result-stat-value {
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .restart-btn {
+            padding: 12px 30px;
+            border-radius: 8px;
+            background: var(--accent);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        .restart-btn:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+
+        /* 響應式設計 */
+        @media (max-width: 768px) {
+            .subject-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .home-title {
+                font-size: 24px;
+            }
+            
+            .subject-stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="theme-switch" id="themeToggle">
+        <span class="theme-icon" id="themeIcon">🌞</span>
+    </div>
+
+    <div class="container">
+        <!-- 首頁 -->
+        <div class="home" id="home">
+            <div class="home-header">
+                <h1 class="home-title">
+                    <span class="title-icon">📚</span>
+                    線上測驗系統
+                </h1>
+                <p class="home-subtitle">智能計時 · 分科進度追蹤</p>
+            </div>
+
+            <!-- 學習統計面板（只保留分科） -->
+            <div class="stats-panel">
+                <h2 class="stats-title">📊 分科學習進度</h2>
+                <div class="subject-stats-grid" id="subjectStatsGrid">
+                    <!-- 數學統計 -->
+                    <div class="subject-stat-card">
+                        <div class="subject-stat-header">
+                            <span>🧮 數學</span>
+                        </div>
+                        <div class="subject-stat-details">
+                            <div class="subject-stat-detail">
+                                <span id="mathTotal">0 題</span>
+                                <span class="subject-stat-desc">總答題數</span>
+                            </div>
+                            <div class="subject-stat-detail">
+                                <span id="mathAccuracy">0%</span>
+                                <span class="subject-stat-desc">正確率</span>
+                            </div>
+                            <div class="subject-stat-detail">
+                                <span id="mathHighest">0 分</span>
+                                <span class="subject-stat-desc">最高分</span>
+                            </div>
+                            <div class="subject-stat-detail">
+                                <span id="mathCompleted">0 次</span>
+                                <span class="subject-stat-desc">完成測驗</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 國文統計 -->
+                    <div class="subject-stat-card">
+                        <div class="subject-stat-header">
+                            <span>📝 國文</span>
+                        </div>
+                        <div class="subject-stat-details">
+                            <div class="subject-stat-detail">
+                                <span id="chineseTotal">0 題</span>
+                                <span class="subject-stat-desc">總答題數</span>
+                            </div>
+                            <div class="subject-stat-detail">
+                                <span id="chineseAccuracy">0%</span>
+                                <span class="subject-stat-desc">正確率</span>
+                            </div>
+                            <div class="subject-stat-detail">
+                                <span id="chineseHighest">0 分</span>
+                                <span class="subject-stat-desc">最高分</span>
+                            </div>
+                            <div class="subject-stat-detail">
+                                <span id="chineseCompleted">0 次</span>
+                                <span class="subject-stat-desc">完成測驗</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 英文統計 -->
+                    <div class="subject-stat-card">
+                        <div class="subject-stat-header">
+                            <span>🔤 英文</span>
+                        </div>
+                        <div class="subject-stat-details">
+                            <div class="subject-stat-detail">
+                                <span id="englishTotal">0 題</span>
+                                <span class="subject-stat-desc">總答題數</span>
+                            </div>
+                            <div class="subject-stat-detail">
+                                <span id="englishAccuracy">0%</span>
+                                <span class="subject-stat-desc">正確率</span>
+                            </div>
+                            <div class="subject-stat-detail">
+                                <span id="englishHighest">0 分</span>
+                                <span class="subject-stat-desc">最高分</span>
+                            </div>
+                            <div class="subject-stat-detail">
+                                <span id="englishCompleted">0 次</span>
+                                <span class="subject-stat-desc">完成測驗</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 自然統計 -->
+                    <div class="subject-stat-card">
+                        <div class="subject-stat-header">
+                            <span>🔬 自然</span>
+                        </div>
+                        <div class="subject-stat-details">
+                            <div class="subject-stat-detail">
+                                <span id="scienceTotal">0 題</span>
+                                <span class="subject-stat-desc">總答題數</span>
+                            </div>
+                            <div class="subject-stat-detail">
+                                <span id="scienceAccuracy">0%</span>
+                                <span class="subject-stat-desc">正確率</span>
+                            </div>
+                            <div class="subject-stat-detail">
+                                <span id="scienceHighest">0 分</span>
+                                <span class="subject-stat-desc">最高分</span>
+                            </div>
+                            <div class="subject-stat-detail">
+                                <span id="scienceCompleted">0 次</span>
+                                <span class="subject-stat-desc">完成測驗</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 學科選擇 -->
+            <div class="subject-grid">
+                <div class="subject-card" onclick="startQuiz('math')">
+                    <div class="subject-icon">🧮</div>
+                    <div class="subject-name">數學</div>
+                    <div class="subject-desc">基礎運算、代數、幾何</div>
+                </div>
+                <div class="subject-card" onclick="startQuiz('chinese')">
+                    <div class="subject-icon">📝</div>
+                    <div class="subject-name">國文</div>
+                    <div class="subject-desc">成語、詩詞、語文基礎</div>
+                </div>
+                <div class="subject-card" onclick="startQuiz('english')">
+                    <div class="subject-icon">🔤</div>
+                    <div class="subject-name">英文</div>
+                    <div class="subject-desc">基礎字彙、語法、句型</div>
+                </div>
+                <div class="subject-card" onclick="startQuiz('science')">
+                    <div class="subject-icon">🔬</div>
+                    <div class="subject-name">自然</div>
+                    <div class="subject-desc">科學常識、理化基礎</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 測驗頁面 -->
+        <div class="quiz" id="quiz">
+            <div class="quiz-header">
+                <button class="back-btn" onclick="goHome()">
+                    ← 返回首頁
+                </button>
+                <div class="quiz-title" id="quizTitle">數學測驗</div>
+                <div class="timer-container">
+                    <span class="timer-label">剩餘時間：</span>
+                    <div class="timer timer-normal" id="quizTimer">01:30</div>
+                </div>
+            </div>
+
+            <div class="quiz-progress">
+                <div class="progress-info">
+                    <span id="progressText">題目 1/10</span>
+                    <span id="scoreText">當前分數：0</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+            </div>
+
+            <!-- 移除圖片的題目區域 -->
+            <div class="question-card">
+                <div class="question-content">
+                    <div class="question-number" id="questionNumber">題目 1/10</div>
+                    <div class="question-text" id="questionText"></div>
+                </div>
+            </div>
+
+            <div class="options" id="optionsContainer"></div>
+
+            <div class="feedback" id="feedbackText"></div>
+
+            <div class="quiz-nav">
+                <button class="nav-btn nav-btn-secondary" onclick="prevQuestion()">上一題</button>
+                <button class="nav-btn nav-btn-primary" onclick="nextQuestion()">下一題</button>
+            </div>
+        </div>
+
+        <!-- 結果頁面 -->
+        <div class="result" id="result">
+            <div class="result-icon">🏆</div>
+            <h2 class="result-title">測驗完成！</h2>
+            <div class="result-score" id="finalScore">總分：80 分 (8/10)</div>
+
+            <div class="result-stats">
+                <div class="result-stat">
+                    <div class="result-stat-label">答對題數</div>
+                    <div class="result-stat-value" id="correctCount">8</div>
+                </div>
+                <div class="result-stat">
+                    <div class="result-stat-label">答錯題數</div>
+                    <div class="result-stat-value" id="wrongCount">2</div>
+                </div>
+                <div class="result-stat">
+                    <div class="result-stat-label">正確率</div>
+                    <div class="result-stat-value" id="finalAccuracy">80%</div>
+                </div>
+                <div class="result-stat">
+                    <div class="result-stat-label">總耗時</div>
+                    <div class="result-stat-value" id="totalTime">08:45</div>
+                </div>
+            </div>
+
+            <button class="restart-btn" onclick="goHome()">回到首頁</button>
+        </div>
+    </div>
+
+    <script>
+        // 1. 題庫設定（移除圖片屬性，保留難度和時間）
+        const questionBank = {
+            math: [
+                { 
+                    q: "5 + 7 = ?", 
+                    o: ["10", "11", "12", "13"], 
+                    a: 2, 
+                    difficulty: "easy", 
+                    time: 20
+                },
+                { 
+                    q: "2 + 3 × 4 = ?", 
+                    o: ["20", "14", "12", "10"], 
+                    a: 1, 
+                    difficulty: "medium", 
+                    time: 40
+                },
+                { 
+                    q: "若 2x + 4 = 12，則 x = ?", 
+                    o: ["3", "4", "5", "6"], 
+                    a: 1, 
+                    difficulty: "medium", 
+                    time: 50
+                },
+                { 
+                    q: "三角形內角和為？", 
+                    o: ["90°", "180°", "270°", "360°"], 
+                    a: 1, 
+                    difficulty: "medium", 
+                    time: 30
+                },
+                { 
+                    q: "若 x² = 25，x 可能是？", 
+                    o: ["4", "5", "6", "7"], 
+                    a: 1, 
+                    difficulty: "hard", 
+                    time: 60
+                },
+                { 
+                    q: "1/2 + 1/4 + 1/8 = ?", 
+                    o: ["7/8", "3/4", "5/8", "1/2"], 
+                    a: 0, 
+                    difficulty: "hard", 
+                    time: 70
+                },
+                { 
+                    q: "長方體體積 = 長 × 寬 × 高，若長=5、寬=3、高=2，體積是？", 
+                    o: ["10", "15", "25", "30"], 
+                    a: 3, 
+                    difficulty: "medium", 
+                    time: 45
+                },
+                { 
+                    q: "100 - 55 + 23 = ?", 
+                    o: ["68", "78", "88", "98"], 
+                    a: 0, 
+                    difficulty: "easy", 
+                    time: 25
+                },
+                { 
+                    q: "圓周率 π 大約等於？", 
+                    o: ["2.14", "3.14", "4.14", "5.14"], 
+                    a: 1, 
+                    difficulty: "easy", 
+                    time: 20
+                },
+                { 
+                    q: "梯形面積 =（上底＋下底）× 高 ÷ 2，若上底=4、下底=6、高=5，面積是？", 
+                    o: ["20", "25", "30", "35"], 
+                    a: 1, 
+                    difficulty: "hard", 
+                    time: 80
+                },
+                { 
+                    q: "7 × 9 - 13 = ?", 
+                    o: ["40", "50", "60", "70"], 
+                    a: 1, 
+                    difficulty: "medium", 
+                    time: 35
+                },
+                { 
+                    q: "1 公尺等於幾公分？", 
+                    o: ["10", "100", "1000", "10000"], 
+                    a: 1, 
+                    difficulty: "easy", 
+                    time: 20
+                },
+                { 
+                    q: "若 3(x + 2) = 21，則 x = ?", 
+                    o: ["5", "6", "7", "8"], 
+                    a: 0, 
+                    difficulty: "hard", 
+                    time: 75
+                },
+                { 
+                    q: "4 + 4 × 0 + 4 = ?", 
+                    o: ["0", "4", "8", "16"], 
+                    a: 2, 
+                    difficulty: "medium", 
+                    time: 30
+                },
+                { 
+                    q: "正方形周長 = 邊長 × 4，若周長=28，邊長是？", 
+                    o: ["6", "7", "8", "9"], 
+                    a: 1, 
+                    difficulty: "easy", 
+                    time: 25
+                }
+            ],
+            chinese: [
+                { 
+                    q: "「床前明月光」下一句？", 
+                    o: ["舉頭望明月", "疑是地上霜", "低頭思故鄉", "春眠不覺曉"], 
+                    a: 1, 
+                    difficulty: "easy", 
+                    time: 20
+                },
+                { 
+                    q: "「一丘之貉」意思相近的是？", 
+                    o: ["志同道合", "彼此差不多", "非常美麗", "非常快樂"], 
+                    a: 1, 
+                    difficulty: "medium", 
+                    time: 40
+                },
+                { 
+                    q: "「亡羊補牢」寓意是？", 
+                    o: ["太遲了沒用", "出錯後及時補救", "做事很草率", "很有遠見"], 
+                    a: 1, 
+                    difficulty: "medium", 
+                    time: 45
+                },
+                { 
+                    q: "「春眠不覺曉」作者是？", 
+                    o: ["李白", "杜甫", "孟浩然", "王維"], 
+                    a: 2, 
+                    difficulty: "hard", 
+                    time: 50
+                },
+                { 
+                    q: "下列哪一個是錯別字？", 
+                    o: ["川流不息", "穿流不息", "山明水秀", "花好月圓"], 
+                    a: 1, 
+                    difficulty: "medium", 
+                    time: 35
+                },
+                { 
+                    q: "「三人行必有我師」出自？", 
+                    o: ["論語", "孟子", "老子", "莊子"], 
+                    a: 0, 
+                    difficulty: "hard", 
+                    time: 60
+                },
+                { 
+                    q: "「刻舟求劍」是什麼故事？", 
+                    o: ["歷史", "寓言", "神話", "童話"], 
+                    a: 1, 
+                    difficulty: "medium", 
+                    time: 30
+                },
+                { 
+                    q: "「美輪美奐」用來形容？", 
+                    o: ["建築", "食物", "音樂", "風景"], 
+                    a: 0, 
+                    difficulty: "easy", 
+                    time: 25
+                },
+                { 
+                    q: "「少壯不努力」下一句？", 
+                    o: ["老大徒傷悲", "歲月不饒人", "光陰似箭", "日月如梭"], 
+                    a: 0, 
+                    difficulty: "easy", 
+                    time: 20
+                },
+                { 
+                    q: "「水滴石穿」強調的是？", 
+                    o: ["力量大", "時間久", "運氣好", "天氣好"], 
+                    a: 1, 
+                    difficulty: "medium", 
+                    time: 35
+                },
+                { 
+                    q: "「守株待兔」比喻什麼？", 
+                    o: ["努力工作", "僥倖心理", "很有耐心", "很聰明"], 
+                    a: 1, 
+                    difficulty: "hard", 
+                    time: 55
+                },
+                { 
+                    q: "「紅」的詞性主要是？", 
+                    o: ["名詞", "動詞", "形容詞", "副詞"], 
+                    a: 2, 
+                    difficulty: "medium", 
+                    time: 40
+                },
+                { 
+                    q: "「一日之計在於？」", 
+                    o: ["晨", "午", "晚", "夜"], 
+                    a: 0, 
+                    difficulty: "easy", 
+                    time: 20
+                },
+                { 
+                    q: "「我吃飯」這個句子的主詞是？", 
+                    o: ["我", "吃", "飯", "吃飯"], 
+                    a: 0, 
+                    difficulty: "easy", 
+                    time: 25
+                },
+                { 
+                    q: "「舉頭望明月，低頭思故鄉」的作者是？", 
+                    o: ["李白", "杜甫", "白居易", "蘇軾"], 
+                    a: 0, 
+                    difficulty: "hard", 
+                    time: 45
+                }
+            ],
+            english: [
+                { 
+                    q: "I am a _____. (學生)", 
+                    o: ["student", "teacher", "doctor", "driver"], 
+                    a: 0, 
+                    difficulty: "easy", 
+                    time: 20
+                },
+                { 
+                    q: "She ______ to school every day.", 
+                    o: ["go", "goes", "going", "went"], 
+                    a: 1, 
+                    difficulty: "medium", 
+                    time: 35
+                },
+                { 
+                    q: "This is ______ apple.", 
+                    o: ["a", "an", "the", "/"], 
+                    a: 1, 
+                    difficulty: "medium", 
+                    time: 40
+                },
+                { 
+                    q: "What color is the sky? It is ______.", 
+                    o: ["red", "blue", "green", "yellow"], 
+                    a: 1, 
+                    difficulty: "easy", 
+                    time: 20
+                },
+                { 
+                    q: "How old are you? I ______ ten.", 
+                    o: ["am", "is", "are", "be"], 
+                    a: 0, 
+                    difficulty: "easy", 
+                    time: 25
+                },
+                { 
+                    q: "I get up ______ 7 o'clock.", 
+                    o: ["in", "on", "at", "for"], 
+                    a: 2, 
+                    difficulty: "hard", 
+                    time: 50
+                },
+                { 
+                    q: "I have two ______.", 
+                    o: ["book", "books", "bookes", "bookies"], 
+                    a: 1, 
+                    difficulty: "medium", 
+                    time: 30
+                },
+                { 
+                    q: "They ______ football now.", 
+                    o: ["play", "plays", "playing", "are playing"], 
+                    a: 3, 
+                    difficulty: "hard", 
+                    time: 60
+                },
+                { 
+                    q: "Yesterday I ______ TV.", 
+                    o: ["watch", "watches", "watched", "watching"], 
+                    a: 2, 
+                    difficulty: "medium", 
+                    time: 45
+                },
+                { 
+                    q: "I want ______ a cake.", 
+                    o: ["eat", "to eat", "eating", "ate"], 
+                    a: 1, 
+                    difficulty: "hard", 
+                    time: 55
+                },
+                { 
+                    q: "What is 5 + 3? It is _____.", 
+                    o: ["seven", "eight", "nine", "ten"], 
+                    a: 1, 
+                    difficulty: "easy", 
+                    time: 20
+                },
+                { 
+                    q: "I like ______. (貓)", 
+                    o: ["cat", "cats", "dog", "dogs"], 
+                    a: 1, 
+                    difficulty: "easy", 
+                    time: 25
+                },
+                { 
+                    q: "He can ______.", 
+                    o: ["swim", "swims", "swimming", "swam"], 
+                    a: 0, 
+                    difficulty: "medium", 
+                    time: 30
+                },
+                { 
+                    q: "Good ______. (晚上)", 
+                    o: ["morning", "afternoon", "evening", "night"], 
+                    a: 2, 
+                    difficulty: "easy", 
+                    time: 20
+                },
+                { 
+                    q: "______ is your name? My name is Tom.", 
+                    o: ["What", "Who", "Where", "How"], 
+                    a: 0, 
+                    difficulty: "medium", 
+                    time: 35
+                }
+            ],
+            science: [
+                { 
+                    q: "水的化學式是？", 
+                    o: ["H2O", "CO2", "O2", "N2"], 
+                    a: 0, 
+                    difficulty: "medium", 
+                    time: 30
+                },
+                { 
+                    q: "植物行光合作用需要？", 
+                    o: ["氧氣", "二氧化碳", "氮氣", "氫氣"], 
+                    a: 1, 
+                    difficulty: "medium", 
+                    time: 40
+                },
+                { 
+                    q: "地球自轉產生？", 
+                    o: ["四季", "晝夜", "月相", "日食"], 
+                    a: 1, 
+                    difficulty: "hard", 
+                    time: 50
+                },
+                { 
+                    q: "人類呼吸主要吸入？", 
+                    o: ["氧氣", "二氧化碳", "氮氣", "氫氣"], 
+                    a: 0, 
+                    difficulty: "easy", 
+                    time: 20
+                },
+                { 
+                    q: "聲音在哪裡不能傳播？", 
+                    o: ["空氣", "水", "鐵棒", "真空"], 
+                    a: 3, 
+                    difficulty: "hard", 
+                    time: 60
+                },
+                { 
+                    q: "下列哪一個是固體？", 
+                    o: ["水", "冰", "水蒸氣", "霧"], 
+                    a: 1, 
+                    difficulty: "easy", 
+                    time: 20
+                },
+                { 
+                    q: "太陽是？", 
+                    o: ["行星", "恆星", "衛星", "流星"], 
+                    a: 1, 
+                    difficulty: "medium", 
+                    time: 35
+                },
+                { 
+                    q: "pH=7 是？", 
+                    o: ["酸性", "中性", "鹼性", "不知道"], 
+                    a: 1, 
+                    difficulty: "easy", 
+                    time: 25
+                },
+                { 
+                    q: "鐵生鏽是？", 
+                    o: ["物理變化", "化學變化", "都不是", "都是"], 
+                    a: 1, 
+                    difficulty: "hard", 
+                    time: 55
+                },
+                { 
+                    q: "電的路徑叫？", 
+                    o: ["電路", "電流", "電壓", "電阻"], 
+                    a: 0, 
+                    difficulty: "medium", 
+                    time: 30
+                },
+                { 
+                    q: "月亮光是來自？", 
+                    o: ["自己", "太陽", "地球", "星星"], 
+                    a: 1, 
+                    difficulty: "easy", 
+                    time: 20
+                },
+                { 
+                    q: "四季成因是？", 
+                    o: ["自轉", "公轉", "月亮", "天氣"], 
+                    a: 1, 
+                    difficulty: "hard", 
+                    time: 70
+                },
+                { 
+                    q: "哪個不是氣體？", 
+                    o: ["氧氣", "氮氣", "水", "二氧化碳"], 
+                    a: 2, 
+                    difficulty: "easy", 
+                    time: 25
+                },
+                { 
+                    q: "植物製造養分的器官？", 
+                    o: ["根", "莖", "葉", "花"], 
+                    a: 2, 
+                    difficulty: "medium", 
+                    time: 40
+                },
+                { 
+                    q: "磁力最強的地方是？", 
+                    o: ["中間", "兩極", "全部一樣", "都不強"], 
+                    a: 1, 
+                    difficulty: "medium", 
+                    time: 45
+                }
+            ]
+        };
+
+        // 2. 全域狀態管理
+        let currentQuiz = {
+            subject: '',
+            questions: [],
+            currentIndex: 0,
+            answers: [],
+            scores: 0,
+            startTime: 0,
+            totalTime: 0,
+            timerInterval: null,
+            currentTime: 0
+        };
+
+        // 3. 學習數據存儲 - 分科存儲
+        let learningData = JSON.parse(localStorage.getItem('learningData')) || {
+            math: { total: 0, correct: 0, completed: 0, highest: 0 },
+            chinese: { total: 0, correct: 0, completed: 0, highest: 0 },
+            english: { total: 0, correct: 0, completed: 0, highest: 0 },
+            science: { total: 0, correct: 0, completed: 0, highest: 0 }
+        };
+
+        // 修復可能損壞的學習數據
+        function fixLearningData() {
+            const subjects = ['math', 'chinese', 'english', 'science'];
+            subjects.forEach(subject => {
+                if (!learningData[subject]) {
+                    learningData[subject] = { total: 0, correct: 0, completed: 0, highest: 0 };
+                } else {
+                    learningData[subject].total = learningData[subject].total || 0;
+                    learningData[subject].correct = learningData[subject].correct || 0;
+                    learningData[subject].completed = learningData[subject].completed || 0;
+                    learningData[subject].highest = learningData[subject].highest || 0;
+                }
+            });
+            localStorage.setItem('learningData', JSON.stringify(learningData));
+        }
+
+        // 4. DOM元素引用
+        const homeEl = document.getElementById('home');
+        const quizEl = document.getElementById('quiz');
+        const resultEl = document.getElementById('result');
+        const themeToggle = document.getElementById('themeToggle');
+        const themeIcon = document.getElementById('themeIcon');
+
+        // 5. 初始化
+        document.addEventListener('DOMContentLoaded', () => {
+            fixLearningData();
+            initTheme();
+            updateLearningStats();
+        });
+
+        // 6. 主題切換功能
+        function initTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            themeIcon.textContent = savedTheme === 'light' ? '🌞' : '🌙';
+            
+            themeToggle.addEventListener('click', () => {
+                const currentTheme = document.documentElement.getAttribute('data-theme');
+                const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+                
+                document.documentElement.setAttribute('data-theme', newTheme);
+                localStorage.setItem('theme', newTheme);
+                themeIcon.textContent = newTheme === 'light' ? '🌞' : '🌙';
+            });
+        }
+
+        // 7. 開始測驗
+        function startQuiz(subject) {
+            currentQuiz = {
+                subject: subject,
+                questions: [],
+                currentIndex: 0,
+                answers: [],
+                scores: 0,
+                startTime: new Date().getTime(),
+                totalTime: 0,
+                timerInterval: null,
+                currentTime: 0
+            };
+
+            const allQuestions = questionBank[subject];
+            const shuffledQuestions = [...allQuestions].sort(() => Math.random() - 0.5);
+            currentQuiz.questions = shuffledQuestions.slice(0, 10);
+            currentQuiz.answers = Array(10).fill(null);
+            
+            document.getElementById('quizTitle').textContent = {
+                math: '數學測驗',
+                chinese: '國文測驗',
+                english: '英文測驗',
+                science: '自然測驗'
+            }[subject];
+
+            homeEl.style.display = 'none';
+            quizEl.style.display = 'block';
+            resultEl.style.display = 'none';
+
+            renderCurrentQuestion();
+        }
+
+        // 8. 渲染當前題目
+        function renderCurrentQuestion() {
+            const qIndex = currentQuiz.currentIndex;
+            const question = currentQuiz.questions[qIndex];
+            
+            if (currentQuiz.timerInterval) clearInterval(currentQuiz.timerInterval);
+            currentQuiz.currentTime = question.time;
+            
+            document.getElementById('progressText').textContent = `題目 ${qIndex + 1}/10`;
+            document.getElementById('scoreText').textContent = `當前分數：${currentQuiz.scores || 0}`;
+            document.getElementById('questionNumber').textContent = `題目 ${qIndex + 1}/10`;
+            
+            const progressPercent = ((qIndex + 1) / 10) * 100;
+            document.getElementById('progressFill').style.width = `${progressPercent}%`;
+            
+            document.getElementById('questionText').textContent = question.q;
+            
+            updateTimerDisplay();
+            startQuestionTimer();
+            renderOptions(question);
+            
+            document.getElementById('feedbackText').textContent = '';
+            document.getElementById('feedbackText').className = 'feedback';
+        }
+
+        // 9. 渲染選項
+        function renderOptions(question) {
+            const optionsContainer = document.getElementById('optionsContainer');
+            optionsContainer.innerHTML = '';
+            
+            const qIndex = currentQuiz.currentIndex;
+            const userAnswer = currentQuiz.answers[qIndex];
+            
+            question.o.forEach((option, optIndex) => {
+                const optionEl = document.createElement('div');
+                optionEl.className = 'option';
+                optionEl.innerHTML = `
+                    <span class="option-icon">${getOptionIcon(optIndex, userAnswer, question.a)}</span>
+                    ${option}
+                `;
+                
+                if (userAnswer === optIndex) {
+                    optionEl.classList.add('selected');
+                    if (optIndex === question.a) {
+                        optionEl.classList.add('correct');
+                        document.getElementById('feedbackText').textContent = '答對了！✅';
+                        document.getElementById('feedbackText').className = 'feedback feedback-correct';
+                    } else {
+                        optionEl.classList.add('incorrect');
+                        document.getElementById('feedbackText').textContent = '答錯了！❌ 正確答案：' + question.o[question.a];
+                        document.getElementById('feedbackText').className = 'feedback feedback-wrong';
+                    }
+                }
+                
+                optionEl.addEventListener('click', () => {
+                    currentQuiz.answers[qIndex] = optIndex;
+                    if (optIndex === question.a) {
+                        currentQuiz.scores = (currentQuiz.scores || 0) + 10;
+                    }
+                    renderOptions(question);
+                    document.getElementById('scoreText').textContent = `當前分數：${currentQuiz.scores || 0}`;
+                });
+                
+                optionsContainer.appendChild(optionEl);
+            });
+        }
+
+        // 10. 取得選項圖標
+        function getOptionIcon(optIndex, userAnswer, correctAnswer) {
+            if (userAnswer === null) return '';
+            if (userAnswer === optIndex && optIndex === correctAnswer) return '✓';
+            if (userAnswer === optIndex && optIndex !== correctAnswer) return '✗';
+            if (optIndex === correctAnswer) return '✓';
+            return '';
+        }
+
+        // 11. 啟動題目計時器
+        function startQuestionTimer() {
+            currentQuiz.timerInterval = setInterval(() => {
+                currentQuiz.currentTime--;
+                updateTimerDisplay();
+                updateTimerColor();
+                if (currentQuiz.currentTime <= 0) {
+                    clearInterval(currentQuiz.timerInterval);
+                    nextQuestion();
+                }
+            }, 1000);
+        }
+
+        // 12. 更新計時器顯示
+        function updateTimerDisplay() {
+            const minutes = Math.floor(currentQuiz.currentTime / 60);
+            const seconds = currentQuiz.currentTime % 60;
+            const timeString = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            document.getElementById('quizTimer').textContent = timeString;
+        }
+
+        // 13. 更新計時器顏色
+        function updateTimerColor() {
+            const timerEl = document.getElementById('quizTimer');
+            const totalTime = currentQuiz.questions[currentQuiz.currentIndex].time;
+            timerEl.classList.remove('timer-normal', 'timer-warning', 'timer-danger');
+            if (currentQuiz.currentTime > totalTime * 0.5) {
+                timerEl.classList.add('timer-normal');
+            } else if (currentQuiz.currentTime > totalTime * 0.2) {
+                timerEl.classList.add('timer-warning');
+            } else {
+                timerEl.classList.add('timer-danger');
+            }
+        }
+
+        // 14. 上一題
+        function prevQuestion() {
+            if (currentQuiz.currentIndex > 0) {
+                clearInterval(currentQuiz.timerInterval);
+                currentQuiz.currentIndex--;
+                renderCurrentQuestion();
+            }
+        }
+
+        // 15. 下一題
+        function nextQuestion() {
+            clearInterval(currentQuiz.timerInterval);
+            if (currentQuiz.currentIndex >= 9) {
+                showResult();
+                return;
+            }
+            currentQuiz.currentIndex++;
+            renderCurrentQuestion();
+        }
+
+        // 16. 顯示測驗結果
+        function showResult() {
+            currentQuiz.totalTime = Math.floor((new Date().getTime() - currentQuiz.startTime) / 1000);
+            
+            let correctCount = 0;
+            currentQuiz.questions.forEach((q, index) => {
+                if (currentQuiz.answers[index] === q.a) correctCount++;
+            });
+            const wrongCount = 10 - correctCount;
+            const accuracy = 10 > 0 ? Math.round((correctCount / 10) * 100) : 0;
+            
+            // 更新分科學習數據
+            const subject = currentQuiz.subject;
+            learningData[subject].total = (learningData[subject].total || 0) + 10;
+            learningData[subject].correct = (learningData[subject].correct || 0) + correctCount;
+            learningData[subject].completed = (learningData[subject].completed || 0) + 1;
+            if ((currentQuiz.scores || 0) > (learningData[subject].highest || 0)) {
+                learningData[subject].highest = currentQuiz.scores || 0;
+            }
+            
+            localStorage.setItem('learningData', JSON.stringify(learningData));
+            
+            document.getElementById('finalScore').textContent = `總分：${currentQuiz.scores || 0} 分 (${correctCount}/10)`;
+            document.getElementById('correctCount').textContent = correctCount;
+            document.getElementById('wrongCount').textContent = wrongCount;
+            document.getElementById('finalAccuracy').textContent = `${accuracy}%`;
+            
+            const minutes = Math.floor(currentQuiz.totalTime / 60);
+            const seconds = currentQuiz.totalTime % 60;
+            document.getElementById('totalTime').textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            
+            quizEl.style.display = 'none';
+            resultEl.style.display = 'block';
+            updateLearningStats();
+        }
+
+        // 17. 返回首頁
+        function goHome() {
+            if (currentQuiz.timerInterval) clearInterval(currentQuiz.timerInterval);
+            homeEl.style.display = 'block';
+            quizEl.style.display = 'none';
+            resultEl.style.display = 'none';
+            updateLearningStats();
+        }
+
+        // 18. 更新分科學習統計
+        function updateLearningStats() {
+            function updateSubjectStats(subjectKey, domPrefix) {
+                const subjectData = learningData[subjectKey] || { total:0, correct:0, completed:0, highest:0 };
+                const subTotal = subjectData.total || 0;
+                const subCorrect = subjectData.correct || 0;
+                const subCompleted = subjectData.completed || 0;
+                const subHighest = subjectData.highest || 0;
+                const subAccuracy = subTotal > 0 ? Math.round((subCorrect / subTotal) * 100) : 0;
+                
+                document.getElementById(`${domPrefix}Total`).textContent = `${subTotal} 題`;
+                document.getElementById(`${domPrefix}Accuracy`).textContent = `${subAccuracy}%`;
+                document.getElementById(`${domPrefix}Highest`).textContent = `${subHighest} 分`;
+                document.getElementById(`${domPrefix}Completed`).textContent = `${subCompleted} 次`;
+            }
+
+            updateSubjectStats('math', 'math');
+            updateSubjectStats('chinese', 'chinese');
+            updateSubjectStats('english', 'english');
+            updateSubjectStats('science', 'science');
+        }
+    </script>
+</body>
+</html>
